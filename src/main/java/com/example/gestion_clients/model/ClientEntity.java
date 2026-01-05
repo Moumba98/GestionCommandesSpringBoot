@@ -1,7 +1,6 @@
 package com.example.gestion_clients.model;
 
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
