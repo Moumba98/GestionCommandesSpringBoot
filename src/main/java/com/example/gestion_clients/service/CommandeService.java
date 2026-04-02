@@ -1,14 +1,16 @@
 package com.example.gestion_clients.service;
 
-
 import com.example.gestion_clients.dto.CommandeDTO;
-import com.example.gestion_clients.model.ClientEntity;
+import com.example.gestion_clients.model.UserEntity; // Import User au lieu de Client
 import com.example.gestion_clients.model.CommandeEntity;
-import com.example.gestion_clients.repository.ClientRepository;
+import com.example.gestion_clients.model.Product;
+import com.example.gestion_clients.repository.UserRepository; // Nouveau Repository
 import com.example.gestion_clients.repository.CommandeRepository;
+import com.example.gestion_clients.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,78 +20,65 @@ public class CommandeService {
     private CommandeRepository commandeRepository;
 
     @Autowired
-    private ClientRepository clientRepository;
+    private UserRepository userRepository; // On utilise User maintenant
 
+    @Autowired
+    private ProductRepository productRepository;
 
-    // ajouter une commande ///////////////////////////////////
-
-
+    // 1. AJOUTER
     public CommandeEntity ajouterCommande(CommandeDTO dto) {
-        // 1. On cherche le client dans la base
-        ClientEntity client = clientRepository.findById(dto.getClientId())
-                .orElseThrow(() -> new RuntimeException("Client non trouvé avec l'ID : " + dto.getClientId()));
+        UserEntity user = userRepository.findById(dto.getClientId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
+        Product product = productRepository.findById(dto.getProductId())
+                .orElseThrow(() -> new RuntimeException("Produit non trouvé"));
 
-        // 2. On crée la commande et on l'associe au client
-        CommandeEntity commande = CommandeEntity.builder()
-                .produit(dto.getProduit())
+        return commandeRepository.save(CommandeEntity.builder()
+                .product(product)
                 .quantite(dto.getQuantite())
-                .client(client) // <-- C'est ici que l'association se fait !
-                .build();
-
-        // 3. On sauvegarde
-        return commandeRepository.save(commande);
+                .user(user) // Assure-toi que le champ dans CommandeEntity s'appelle 'user'
+                .prixUnitaire(product.getPrice())
+                .dateCommande(LocalDateTime.now())
+                .reference("REF-" + System.currentTimeMillis())
+                .build());
     }
 
-
-
-     // afficher toutes les commmendes /////////////////////////////////
-
-    public List<CommandeEntity> listerToutesLesCommandes() {
-        return commandeRepository.findAll();
-
-    }
-
-
-
-
-     // recuperer une commande par son id  //////////////////////////////////
-
+    // 2. TROUVER PAR ID (C'est la méthode qui te manque !)
     public CommandeEntity trouverParId(Long id) {
         return commandeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée avec l'ID : " + id));
     }
 
+    // 3. HISTORIQUE
+    public List<CommandeEntity> getHistoriqueParClient(String username) {
+        return commandeRepository.findByUserUsernameOrderByDateCommandeDesc(username);
+    }
 
-
-
-    // MODIFIER une commande   ////////////////////////////////
-
+    // 4. MODIFIER
     public CommandeEntity modifierCommande(Long id, CommandeDTO dto) {
-        // 1. On vérifie si la commande existe
+        // Ici on appelle trouverParId(id) qui est définie juste au-dessus
         CommandeEntity commandeExistante = trouverParId(id);
 
-        // 2. On vérifie si le client associé au DTO existe
-        ClientEntity client = clientRepository.findById(dto.getClientId())
-                .orElseThrow(() -> new RuntimeException("Client non trouvé avec l'ID : " + dto.getClientId()));
+        UserEntity user = userRepository.findById(dto.getClientId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        // 3. Mise à jour des champs
-        commandeExistante.setProduit(dto.getProduit());
+        Product product = productRepository.findById(dto.getProductId())
+                .orElseThrow(() -> new RuntimeException("Produit non trouvé"));
+
+        commandeExistante.setProduct(product);
         commandeExistante.setQuantite(dto.getQuantite());
-        commandeExistante.setClient(client); // On peut changer le client de la commande
+        commandeExistante.setUser(user);
 
-        // 4. Sauvegarde
         return commandeRepository.save(commandeExistante);
     }
 
-
-
-    // SUPPRIMER une commande /////////////////////////////////////////
-
+    // 5. SUPPRIMER
     public void supprimerCommande(Long id) {
-        // Vérification d'existence
         CommandeEntity commande = trouverParId(id);
         commandeRepository.delete(commande);
     }
 
+    public List<CommandeEntity> listerToutesLesCommandes() {
+        return commandeRepository.findAll();
+    }
 }
