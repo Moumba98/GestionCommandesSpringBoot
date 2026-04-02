@@ -1,5 +1,6 @@
 package com.example.gestion_clients.security;
 
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +33,16 @@ public class JwtFilter extends OncePerRequestFilter {
         // 2. On vérifie si le header contient un Bearer Token
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7); // On enlève "Bearer " pour garder juste le code
-            username = jwtUtils.getUsernameFromToken(token); // On extrait le nom de l'utilisateur
+
+            try {
+                // On essaie d'extraire le username
+                username = jwtUtils.getUsernameFromToken(token);
+            } catch (Exception e) {
+                // Si le token est expiré ou mal formé, on affiche l'erreur en console
+                // mais on ne bloque pas la requête ici !
+                logger.error("Impossible d'extraire le username du token : " + e.getMessage());
+            }
+           // username = jwtUtils.getUsernameFromToken(token); // On extrait le nom de l'utilisateur
         }
 
         // 3. Si on a un utilisateur et qu'il n'est pas encore authentifié dans le contexte
@@ -48,6 +58,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 // On crée une "Autorité" que Spring comprend.
                 // IMPORTANT : On ajoute "ROLE_" car .hasRole("ADMIN") cherche "ROLE_ADMIN"
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                System.out.println("ROLE FROM TOKEN = [" + role + "]");
 
                 // On crée l'objet d'authentification en lui donnant la liste des autorités (rôles)
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

@@ -4,6 +4,7 @@ import com.example.gestion_clients.model.UserEntity;
 import com.example.gestion_clients.repository.UserRepository;
 import com.example.gestion_clients.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class LoginController {
 
     private final UserRepository userRepository;
@@ -64,6 +66,14 @@ public class LoginController {
         }
     }
 
+    // afficher les utilisateur
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+        // On récupère tout le monde
+        return ResponseEntity.ok(userRepository.findAll());
+    }
+
     // chager le role de l'utilisteur
 
     @PutMapping("/change-role/{username}")
@@ -77,5 +87,17 @@ public class LoginController {
         userRepository.save(user);
 
         return ResponseEntity.ok("Le rôle de " + username + " a été mis à jour en : " + newRole);
+    }
+
+    // 4. SUPPRIMER UN UTILISATEUR (Admin uniquement)
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+        // On vérifie si l'utilisateur existe avant de supprimer
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.badRequest().body("Erreur : Utilisateur introuvable.");
+        }
+
+        userRepository.deleteById(id);
+        return ResponseEntity.ok("L'utilisateur a été supprimé avec succès.");
     }
 }
