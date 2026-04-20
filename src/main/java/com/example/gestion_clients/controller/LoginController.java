@@ -37,7 +37,7 @@ public class LoginController {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
 
-        return ResponseEntity.ok("Utilisateur crééééééééé avec succès avec le rôle User par defaut : " + user.getRole());
+        return ResponseEntity.ok("Utilisateur crééé avec succès avec le rôle User par defaut : " + user.getRole());
     }
 
     // 2. SE CONNECTER ET RÉCUPÉRER LE TOKEN (AVEC RÔLE)
